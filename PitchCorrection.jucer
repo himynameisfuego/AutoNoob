@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <JUCERPROJECT id="OKaqkn" name="PitchCorrection" projectType="audioplug" useAppConfig="0"
-              addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1">
+              addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1" displaySplashScreen="1">
   <MAINGROUP id="Z06H8y" name="PitchCorrection">
     <GROUP id="{5948AA5B-3623-2327-84D3-FC4E71AB0D6C}" name="Source">
       <FILE id="k8sL5r" name="f0Estim.h" compile="0" resource="0" file="Source/f0Estim.h"/>
@@ -42,20 +42,20 @@
         <CONFIGURATION isDebug="0" name="Release" targetName="PitchCorrection"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
-        <MODULEPATH id="juce_audio_basics" path="../modern-rt-audio-course/dependencies/JUCE/modules"/>
-        <MODULEPATH id="juce_audio_devices" path="../modern-rt-audio-course/dependencies/JUCE/modules"/>
-        <MODULEPATH id="juce_audio_formats" path="../modern-rt-audio-course/dependencies/JUCE/modules"/>
-        <MODULEPATH id="juce_audio_plugin_client" path="../modern-rt-audio-course/dependencies/JUCE/modules"/>
-        <MODULEPATH id="juce_audio_processors" path="../modern-rt-audio-course/dependencies/JUCE/modules"/>
-        <MODULEPATH id="juce_audio_utils" path="../modern-rt-audio-course/dependencies/JUCE/modules"/>
-        <MODULEPATH id="juce_core" path="../modern-rt-audio-course/dependencies/JUCE/modules"/>
-        <MODULEPATH id="juce_data_structures" path="../modern-rt-audio-course/dependencies/JUCE/modules"/>
-        <MODULEPATH id="juce_events" path="../modern-rt-audio-course/dependencies/JUCE/modules"/>
-        <MODULEPATH id="juce_graphics" path="../modern-rt-audio-course/dependencies/JUCE/modules"/>
-        <MODULEPATH id="juce_gui_basics" path="../modern-rt-audio-course/dependencies/JUCE/modules"/>
-        <MODULEPATH id="juce_gui_extra" path="../modern-rt-audio-course/dependencies/JUCE/modules"/>
-        <MODULEPATH id="mrta_utils" path="../modern-rt-audio-course/modules"/>
-        <MODULEPATH id="juce_dsp" path="../modern-rt-audio-course/dependencies/JUCE/modules"/>
+        <MODULEPATH id="juce_audio_basics" path="..\..\dependencies\JUCE\modules"/>
+        <MODULEPATH id="juce_audio_devices" path="..\..\dependencies\JUCE\modules"/>
+        <MODULEPATH id="juce_audio_formats" path="..\..\dependencies\JUCE\modules"/>
+        <MODULEPATH id="juce_audio_plugin_client" path="..\..\dependencies\JUCE\modules"/>
+        <MODULEPATH id="juce_audio_processors" path="..\..\dependencies\JUCE\modules"/>
+        <MODULEPATH id="juce_audio_utils" path="..\..\dependencies\JUCE\modules"/>
+        <MODULEPATH id="juce_core" path="..\..\dependencies\JUCE\modules"/>
+        <MODULEPATH id="juce_data_structures" path="..\..\dependencies\JUCE\modules"/>
+        <MODULEPATH id="juce_events" path="..\..\dependencies\JUCE\modules"/>
+        <MODULEPATH id="juce_graphics" path="..\..\dependencies\JUCE\modules"/>
+        <MODULEPATH id="juce_gui_basics" path="..\..\dependencies\JUCE\modules"/>
+        <MODULEPATH id="juce_gui_extra" path="..\..\dependencies\JUCE\modules"/>
+        <MODULEPATH id="mrta_utils" path="..\..\modules"/>
+        <MODULEPATH id="juce_dsp" path="..\..\dependencies\JUCE\modules"/>
       </MODULEPATHS>
     </VS2019>
   </EXPORTFORMATS>

@@ -192,6 +192,22 @@ void PitchCorrectionAudioProcessor::prepareToPlay(double sampleRate, int samples
     fftDataFreq.realloc(fftSize);
     fftDataFreq.clear(fftSize);
 
+    //cepstrum_x.realloc(fftSize);
+    //cepstrum_x.clear(fftSize);
+    //cepstrum_X.realloc(fftSize);
+    //cepstrum_X.clear(fftSize);
+    //cepstrum_Y.realloc(fftSize);
+    //cepstrum_Y.clear(fftSize);
+       
+
+    //memset(analysisMagnitude, 0, sizeof(analysisMagnitude));
+    //memset(analysisFrequency, 0, sizeof(analysisFrequency));
+    //memset(synthesisMagnitude, 0, sizeof(synthesisMagnitude));
+    //memset(synthesisFrequency, 0, sizeof(synthesisFrequency));
+
+    //memset(lastInputPhase, 0, sizeof(lastInputPhase));
+    //memset(lastOutputPhase, 0, sizeof(lastOutputPhase));
+
     samplesSinceLastFFT = 0;
 
 
@@ -288,6 +304,9 @@ void PitchCorrectionAudioProcessor::processBlock(juce::AudioBuffer<float>& buffe
     auto totalNumOutputChannels = getTotalNumOutputChannels();
     auto numSamples = buffer.getNumSamples();
 
+    //a = 
+    //for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
+    //    buffer.clear(i, 0, buffer.getNumSamples());
 
     int currentInputBufferWritePosition;
     int currentOutputBufferWritePosition;
@@ -304,7 +323,9 @@ void PitchCorrectionAudioProcessor::processBlock(juce::AudioBuffer<float>& buffe
         ratio = roundf(shift * (float)hopSize) / (float)hopSize;
     }
         
+    //DBG("ratio " <<  ratio);
     int resampledLength = floorf((float)fftSize / ratio);
+    //DBG("resampledLength " << resampledLength);
     juce::HeapBlock<float> resampledOutput(resampledLength, true);
     juce::HeapBlock<float> synthesisWindow(resampledLength, true);
     makeHannWindow(synthesisWindow, resampledLength);
@@ -363,17 +384,81 @@ void PitchCorrectionAudioProcessor::processBlock(juce::AudioBuffer<float>& buffe
 
                 f0_instance.process(dataTimeToEstim, fftSize);
 
+                //bool keepF0 = std::abs(currentF0 - prevF0) < 5.f;
+                //currentF0 = keepF0 * prevF0 + (!keepF0) * f0_instance.get_f0();
+                //prevF0 = currentF0;
                 currentF0 = f0_instance.get_f0();
                 correctF0 = FindClosest(lookupChromatic, chromaticSize, currentF0);
-
+                //DBG( "got f0 value of: " << f0_instance.get_f0());
+                //DBG( "currentF0: " << currentF0);
+                //DBG("correctF0: " << *correctF0);
                 
                 diffF0 = *correctF0 - currentF0;
                 if ((std::abs(diffF0) < 6.5f) && !noobRamp.getTargetValue())
                     diffF0 = 0.f;
 
+                //DBG("diffF0: " << diffF0);
                 autoShift.setTargetValue( powf(2.f, (smtHzRatio * diffF0) / 12.f) );// convert hz to semitones, then semitones to shift ratio
 
+                //DBG("autoShift: " << autoShift);
                 fft.perform(fftDataTime, fftDataFreq, false);
+
+                //// CEPSTRUM COMPUTATION HERE
+                //// Compute log magnitude spectrum
+                //for (unsigned int k = 0; k < fftSize; ++k)
+                //{
+                //    cepstrum_x[k] = std::log10f(std::powf(std::abs(fftDataFreq[k]), 2.f) + 1e-6f) ;
+                //}
+                //fft.perform(cepstrum_x, cepstrum_X, true);
+                //for (unsigned int k = 0; k < fftSize; ++k)
+                //{
+                //    cepstrum_X[k] = std::powf(std::abs(cepstrum_X[k]), 2.f);
+                //    
+                //}
+                //float sumX = 0.f;
+                //for (unsigned int k = 0; k < fftSize-1; ++k)
+                //{
+                //    cepstrum_X[k] = (cepstrum_X[k] + cepstrum_X[k + 1]) / 2.f;
+                //    sumX += cepstrum_X[k].real();
+                //}
+                //
+                //float meanX =  sumX / fftSize;
+
+                //if (ratio >= 1.f)
+                //{
+                //    for (unsigned int i = 0; (i < (int)std::round(fftSize / ratio)); ++i)
+                //        
+                //        cepstrum_Y[i] = cepstrum_X[(int)(std::floor(i * ratio))];
+                //        //cepstrum_Y[i].real(cepstrum_X[(int)(std::floor(i * ratio))].real());
+                //}
+                //else
+                //{
+                //    for (unsigned int i = 0; i < fftSize; ++i)
+                //        cepstrum_Y[i] = cepstrum_X[(int)std::ceil((i * ratio))];
+                //}
+
+                //for (unsigned int i = 0; i < fftSize; ++i)
+                //    cepstrum_Y[i] = cepstrum_X[(int)std::ceil((i * ratio))];
+
+
+                //float sumY = 0.f;
+                //for (unsigned int k = 0; k < fftSize - 1; ++k)
+                //{
+                //    sumY += cepstrum_Y[k].real();
+                //}
+
+                //float meanY = sumY / fftSize;
+                //// LPF Here
+                //for (unsigned int i = 0; i < numLPFCepstrum; ++i)
+                //{
+                //    // LPF
+                //    for (unsigned int k = 0; k < fftSize; ++k)
+                //    {
+                //        cepstrum_X[k] = max(cepstrum_X[k], cepstrum_X_LPF[k]);
+                //    }
+                //    // 
+                //    
+                //}
 
 
                 if (shiftRamp.isSmoothing())
@@ -388,6 +473,13 @@ void PitchCorrectionAudioProcessor::processBlock(juce::AudioBuffer<float>& buffe
                 for (unsigned int index = 0; index < fftSize; ++index)
                 {
                     float magnitude = std::abs(fftDataFreq[index]);
+                    //float d = 0.925f;
+                    //if (formantRamp.getTargetValue() == 1)
+                    //{
+                    //    float s = cepstrum_X[index].real();
+                    //    magnitude = (magnitude) * (((float)cepstrum_Y[index].real())) / (1e-7f + (float)cepstrum_X[index].real());
+                    //}
+                        //(1.f - d) * (magnitude)+d * 
 
                     float phase = std::arg(fftDataFreq[index]);
 
@@ -400,6 +492,8 @@ void PitchCorrectionAudioProcessor::processBlock(juce::AudioBuffer<float>& buffe
                     fftDataFreq[index] = std::polar(magnitude, newPhase);
                 }
 
+                //for (unsigned int i = 0 ; i< fftSize ; ++i)
+                //    fftDataFreq[i].real() cepstrum_Y
 
                 fft.perform(fftDataFreq, fftDataTime, true);
 
@@ -464,6 +558,286 @@ void PitchCorrectionAudioProcessor::processBlock(juce::AudioBuffer<float>& buffe
     for (int channel = totalNumInputChannels; channel < totalNumOutputChannels; ++channel)
         buffer.clear(channel, 0, numSamples);
 }
+//
+//    for (int channel = 0; channel < totalNumInputChannels; ++channel)
+//    {
+//        //auto energy = 0.f;
+//        //for (int i = 0; i < fftSize; ++i)
+//        //{
+//        //    energy += (anaWindow[i] * anaWindow[i]);
+//        //}
+//        //DBG("energy" << energy);
+//        auto* channelData = buffer.getWritePointer(channel);
+//
+//        currentInputBufferWritePosition = inputBufferWritePosition;
+//        currentOutputBufferWritePosition = outputBufferWritePosition;
+//        currentOutputBufferReadPosition = outputBufferReadPosition;
+//        currentSamplesSinceLastFFT = samplesSinceLastFFT;
+//
+//        for (int sample = 0; sample < numSamples; ++sample)
+//        {
+//            const float in = 2.f*channelData[sample];
+//            channelData[sample] = outputBuffer.getSample(channel, currentOutputBufferReadPosition);
+//
+//            outputBuffer.setSample(channel, currentOutputBufferReadPosition, 0.0f); // clear the data we've just copied
+//
+//            if (++currentOutputBufferReadPosition >= outputBufferLength) // wrap around outBuff read ptr
+//                currentOutputBufferReadPosition = 0;
+//
+//            inputBuffer.setSample(channel, currentInputBufferWritePosition, in); // copy current in to input buff
+//            if (++currentInputBufferWritePosition >= inputBufferLength) // wrap around inBuff read ptr
+//                currentInputBufferWritePosition = 0;
+//
+//            if (++currentSamplesSinceLastFFT >= hopSize) // hop counter wrap around
+//            {
+//                currentSamplesSinceLastFFT = 0; // set back to 0
+//
+//                int inputBufferIndex = currentInputBufferWritePosition;
+//                for (int index = 0; index < fftSize; ++index)
+//                {
+//                    //fftDataTime[index].real((anaWindow[index]) * inputBuffer.getSample(channel, inputBufferIndex));
+//                    fftDataTime[index].real(inputBuffer.getSample(channel, inputBufferIndex));
+//                    fftDataTime[index].imag(0.0f);
+//
+//                    if (++inputBufferIndex >= inputBufferLength) // wrap around
+//                        inputBufferIndex = 0;
+//                }
+//                fft.perform(fftDataTime, fftDataFreq, false); // false = forward fft
+//
+//                for (int index = 0; index < fftSize; ++index) 
+//                {
+//                    float magnitude = std::abs(fftDataFreq[index]);
+//                    float phase = std::arg(fftDataFreq[index]);
+//                    
+//                    //float phaseDeviation = phase - inputPhase.getSample(channel, index) - omega[index] * (float)hopSize;
+//                    //float deltaPhi = omega[index] * hopSize + princArg(phaseDeviation);
+//                    //float newPhase = princArg(outputPhase.getSample(channel, index) + deltaPhi * ratio);
+//
+//                    float phaseDiff = phase - lastInputPhase[index];
+//                    float binCenterFrequency = 2.f * M_PI * (float)index / (float)fftSize;
+//
+//                    phaseDiff = princArg(phaseDiff - binCenterFrequency * hopSize);
+//                    float binDeviation = phaseDiff * fftSize / hopSize / (2.f * M_PI);
+//
+//                    analysisFrequency[index] = (float)index + binDeviation;
+//                    
+//                    analysisMagnitude[index] = magnitude;
+//                    
+//                    lastInputPhase[index] = phase;
+//                    //inputPhase.setSample(channel, index, phase);
+//                    //outputPhase.setSample(channel, index, newPhase);
+//                    //fftDataFreq[index] = std::polar(magnitude, newPhase);
+//                }
+//
+//                for (int n = 0; n < fftSize; ++n)
+//                {
+//                    synthesisMagnitude[n] = synthesisFrequency[n] = 0.f;
+//                }
+//
+//                // pitch shifting
+//                for (int n = 0; n < fftSize; ++n)
+//                {
+//                    int newBin = floorf(n * ratio + 0.5);
+//
+//                    // ignore bins above nyquist
+//                    if (newBin <= fftSize / 2)
+//                    {
+//                        synthesisMagnitude[newBin] += analysisMagnitude[n];
+//                        synthesisFrequency[newBin] = analysisFrequency[n] * ratio;
+//                    }
+//                }
+//
+//                for (int n = 0; n < fftSize; ++n)
+//                {
+//                    float amplitude = synthesisMagnitude[n];
+//
+//                    float binDeviation = synthesisFrequency[n] - n;
+//
+//                    float phaseDiff = binDeviation * 2.f * M_PI * (float)hopSize / (float) fftSize;
+//
+//                    float binCenterFrequency = 2.f * M_PI * (float)n / (float)fftSize;
+//                    phaseDiff += binCenterFrequency * hopSize;
+//                    
+//                    float outPhase = princArg(lastOutputPhase[n] + phaseDiff);
+//                    fftDataFreq[n] = std::polar(amplitude, outPhase);
+//
+//                    lastOutputPhase[n] = outPhase;
+//                }
+//
+//                fft.perform(fftDataFreq, fftDataTime, true); // true = inverse fft
+//
+//                int outputBufferIndex = currentOutputBufferWritePosition; 
+//
+//                //for (int index = 0; index < resampledLength; ++index) 
+//                //{
+//                //    float x = (float)index * (float)fftSize / (float)resampledLength;
+//                //    int ix = (int)floorf(x); // int sample
+//                //    float dx = x - (float)ix; // fractional sample
+//
+//                //    float sample1 = fftDataTime[ix].real();
+//                //    float sample2 = fftDataTime[(ix + 1) % fftSize].real();
+//                //    resampledOutput[index] = sample1 + dx * (sample2 - sample1); // lerp
+//                //    //resampledOutput[index] = resampledOutput[index];// *sqrtf(synthesisWindow[index]);
+//                //    //resampledOutput[index] *= sqrtf(anaWindow[index]);
+//                //    resampledOutput[index] *= (synthesisWindow[index]);
+//                //}
+//
+//                for (int index = 0; index < fftSize; ++index) //for (int index = 0; index < resampledLength; ++index) 
+//                {
+//                    float out = outputBuffer.getSample(channel, outputBufferIndex);
+//                    //out += (fftDataTime[index].real()) * anaWindow[index] / ((float)hopSize / (float)fftSize);  // overlap-add with coeff normalize-not yet
+//                    out = out + (( (fftDataTime[index].real() * anaWindow[index]) * ((float)hopSize / (float)fftSize)) );
+//                    //out = (out + resampledOutput[index]) / 1.5f;  //(float)hopSize / (float)resampledLength; // overlap-add with coeff normalize-not yet
+//
+//                    outputBuffer.setSample(channel, outputBufferIndex, out); 
+//
+//                    if (++outputBufferIndex >= outputBufferLength) // wrap around
+//                        outputBufferIndex = 0;
+//                }
+//
+//                currentOutputBufferWritePosition += hopSize; // jump for one hop
+//                if (currentOutputBufferWritePosition >= outputBufferLength) // wrap around
+//                    currentOutputBufferWritePosition = 0;
+//            }
+//                
+//
+//
+//
+//
+//        }
+//        
+//    }
+//
+//    inputBufferWritePosition = currentInputBufferWritePosition;
+//    outputBufferWritePosition = currentOutputBufferWritePosition;
+//    outputBufferReadPosition = currentOutputBufferReadPosition;
+//    samplesSinceLastFFT = currentSamplesSinceLastFFT;
+//
+//    for (int channel = totalNumInputChannels; channel < totalNumOutputChannels; ++channel)
+//        buffer.clear(channel, 0, numSamples);
+//
+//
+//
+//    //for (int channel = 0; channel < totalNumInputChannels; ++channel) {
+//    //    float* channelData = buffer.getWritePointer(channel);
+//
+//    //    currentInputBufferWritePosition = inputBufferWritePosition;
+//    //    currentOutputBufferWritePosition = outputBufferWritePosition;
+//    //    currentOutputBufferReadPosition = outputBufferReadPosition;
+//    //    currentSamplesSinceLastFFT = samplesSinceLastFFT;
+//
+//    //    for (int sample = 0; sample < numSamples; ++sample) {
+//
+//    //        //======================================
+//
+//    //        const float in = channelData[sample];
+//    //        //DBG("in: " << in);
+//    //        channelData[sample] = outputBuffer.getSample(channel, currentOutputBufferReadPosition);
+//    //        //DBG("channelData[sample]: " << channelData[sample]);
+//    //        //======================================
+//
+//    //        outputBuffer.setSample(channel, currentOutputBufferReadPosition, 0.0f);
+//    //        if (++currentOutputBufferReadPosition >= outputBufferLength)
+//    //            currentOutputBufferReadPosition = 0;
+//
+//    //        //======================================
+//
+//    //        inputBuffer.setSample(channel, currentInputBufferWritePosition, in);
+//    //        if (++currentInputBufferWritePosition >= inputBufferLength)
+//    //            currentInputBufferWritePosition = 0;
+//
+//    //        //======================================
+//
+//            //if (++currentSamplesSinceLastFFT >= hopSize) {
+//            //    currentSamplesSinceLastFFT = 0;
+//
+//            //    //======================================
+//
+//            //    int inputBufferIndex = currentInputBufferWritePosition;
+//            //    for (int index = 0; index < fftSize; ++index) {
+//            //        fftDataTime[index].real(sqrtf(anaWindow[index]) * inputBuffer.getSample(channel, inputBufferIndex));
+//            //        //fftDataTime[index].real((anaWindow[index]) * inputBuffer.getSample(channel, inputBufferIndex));
+//            //        fftDataTime[index].imag(0.0f);
+//
+//            //        if (++inputBufferIndex >= inputBufferLength)
+//            //            inputBufferIndex = 0;
+//            //    }
+//
+//    //            //======================================
+//
+//    //            fft.perform(fftDataTime, fftDataFreq, false);
+//
+//    //            //if (paramShift.isSmoothing())
+//    //            //    needToResetPhases = true;
+//    //            //if (shift == paramShift.getTargetValue() && needToResetPhases) 
+//    //            //{
+//    //                //inputPhase.clear();
+//    //                //outputPhase.clear();
+//    //                //needToResetPhases = false;
+//    //            //}
+//
+//    //            for (int index = 0; index < fftSize; ++index) {
+//    //                float magnitude = abs(fftDataFreq[index]);
+//    //                float phase = arg(fftDataFreq[index]);
+//
+//    //                //float phaseDeviation = phase - inputPhase.getSample(channel, index) - omega[index] * (float)hopSize;
+//    //                //float deltaPhi = omega[index] * hopSize + princArg(phaseDeviation);
+//    //                //float newPhase = princArg(outputPhase.getSample(channel, index) + deltaPhi * ratio);
+//
+//    //                //inputPhase.setSample(channel, index, phase);
+//    //                //outputPhase.setSample(channel, index, newPhase);
+//    //                //fftDataFreq[index] = std::polar(magnitude, newPhase);
+//    //                fftDataFreq[index] = std::polar(magnitude, phase);
+//    //            }
+//
+//    //            fft.perform(fftDataFreq, fftDataTime, true);
+//
+//    //            //for (int index = 0; index < resampledLength; ++index) 
+//    //            //{
+//    //            //    float x = (float)index * (float)fftSize / (float)resampledLength;
+//    //            //    int ix = (int)floorf(x);
+//    //            //    float dx = x - (float)ix;
+//
+//    //            //    float sample1 = fftDataTime[ix].real();
+//    //            //    float sample2 = fftDataTime[(ix + 1) % fftSize].real();
+//    //            //    resampledOutput[index] = sample1 + dx * (sample2 - sample1);
+//    //            //    //resampledOutput[index] *= sqrtf(anaWindow[index]);
+//    //            //    resampledOutput[index] *= (synthesisWindow[index]);
+//    //            //}
+//
+//    //            //======================================
+//
+//    //            int outputBufferIndex = currentOutputBufferWritePosition;
+//    //            for (int index = 0; index < resampledLength; ++index) 
+//    //            {
+//    //                float out = outputBuffer.getSample(channel, outputBufferIndex);
+//    //                //out += resampledOutput[index] / 1.5;
+//    //                out += fftDataTime[index].real() * sqrtf(anaWindow[index]) / 1.5 ;
+//    //                outputBuffer.setSample(channel, outputBufferIndex, out);
+//
+//    //                if (++outputBufferIndex >= outputBufferLength)
+//    //                    outputBufferIndex = 0;
+//    //            }
+//
+//    //            //======================================
+//
+//    //            currentOutputBufferWritePosition += hopSize;
+//    //            if (currentOutputBufferWritePosition >= outputBufferLength)
+//    //                currentOutputBufferWritePosition = 0;
+//    //        }
+//
+//    //        //======================================
+//    //    }
+//    //}
+//
+//    //inputBufferWritePosition = currentInputBufferWritePosition;
+//    //outputBufferWritePosition = currentOutputBufferWritePosition;
+//    //outputBufferReadPosition = currentOutputBufferReadPosition;
+//    //samplesSinceLastFFT = currentSamplesSinceLastFFT;
+//
+//    //for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
+//    //    buffer.clear(i, 0, buffer.getNumSamples());
+//}
 
 //==============================================================================
 bool PitchCorrectionAudioProcessor::hasEditor() const

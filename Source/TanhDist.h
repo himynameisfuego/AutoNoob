@@ -1,3 +1,13 @@
+/*
+  ==============================================================================
+
+    TanhDist.h
+    Created: 30 Aug 2023 5:04:29pm
+    Author:  Tantep
+
+  ==============================================================================
+*/
+
 #pragma once
 // We need the math library to use the tanh function
 #include <math.h>
